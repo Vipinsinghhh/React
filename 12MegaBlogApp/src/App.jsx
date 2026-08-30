@@ -7,6 +7,12 @@ import './App.css'
 function App() {
   const [count, setCount] = useState(0)
 
+  console.log(import.meta.env.VITE_APPWRITE_URL)
+  console.log(import.meta.env.VITE_APPWRITE_PROJECT_ID)
+  console.log(import.meta.env.VITE_APPWRITE_DATABASE_ID)
+  console.log(import.meta.env.VITE_APPWRITE_COLLECTION_ID)
+  console.log(import.meta.env.VITE_APPWRITE_BUCKET_ID)
+
   return (
     <>
       <h1>welcome to my blog app by appwrite</h1>
