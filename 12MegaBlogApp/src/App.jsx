@@ -1,23 +1,41 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import heroImg from './assets/hero.png'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import './App.css'
+import { useDispatch } from 'react-redux'
+import authService from './appwrite/auth'
+import { login, logout } from './store/authSlice'
+import { Footer, Header } from './components'
+import { Outlet } from 'react-router-dom'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const dispatch = useDispatch()
 
-  console.log(import.meta.env.VITE_APPWRITE_URL)
-  console.log(import.meta.env.VITE_APPWRITE_PROJECT_ID)
-  console.log(import.meta.env.VITE_APPWRITE_DATABASE_ID)
-  console.log(import.meta.env.VITE_APPWRITE_COLLECTION_ID)
-  console.log(import.meta.env.VITE_APPWRITE_BUCKET_ID)
+  useEffect(() => {
+    authService.getCurrentUser()
+    .then((userData) => {
+      if(userData){
+        dispatch(login({userData}))
+      }else{
+        dispatch(logout())
+      }
+    })
+    .finally(() => setLoading(false))
+  },[])
 
-  return (
-    <>
-      <h1>welcome to my blog app by appwrite</h1>
-    </>
-  )
+  return !loading ? (
+    <div className='min-h-screen flex flex-wrap content-between bg-gray-400'>
+      <div className='w-full block'>
+        <Header/>
+        <main>
+          TODO: <Outlet/>
+        </main>
+        <Footer/>
+      </div>
+    </div>
+  ) : null
 }
 
 export default App
