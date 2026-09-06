@@ -97,11 +97,14 @@ export class AppwriteService {
 
     async uploadFile(file) {
         try {
-            return await this.storage.createFile(
-                conf.appwriteBucketId,
-                ID.unique(),
+            return await this.storage.createFile({
+                bucketId: conf.appwriteBucketId,
+                fileId: ID.unique(),
                 file,
-            )
+                permissions: [
+                    Permission.read(Role.any())
+                ]
+            })
         } catch (error) {
             console.log("Appwrite service :: uploadFile :: error", error);
             return false;
@@ -128,7 +131,9 @@ export class AppwriteService {
     // }
 
     getFilePreview(fileId) {
-        return this.storage.getFilePreview({
+        if (!fileId) return "";
+
+        return this.storage.getFileView({
             bucketId: conf.appwriteBucketId,
             fileId: fileId
         })
