@@ -1,7 +1,7 @@
 import conf from '../conf/conf.js'
-import { Client, Databases, Storage, Query, ID } from 'appwrite'
+import { Client, Databases, Storage, Query, ID, Permission, Role } from 'appwrite'
 
-export class service {
+export class AppwriteService {
     client = new Client();
     database;
     storage;
@@ -100,7 +100,7 @@ export class service {
             return await this.storage.createFile(
                 conf.appwriteBucketId,
                 ID.unique(),
-                file
+                file,
             )
         } catch (error) {
             console.log("Appwrite service :: uploadFile :: error", error);
@@ -108,7 +108,7 @@ export class service {
         }
     }
 
-    async deleteFile(fileId) {  
+    async deleteFile(fileId) {
         try {
             return await this.storage.deleteFile(
                 conf.appwriteBucketId,
@@ -120,16 +120,23 @@ export class service {
         }
     }
 
+    // getFilePreview(fileId) {
+    //     return this.storage.getFilePreview(
+    //         conf.appwriteBucketId,
+    //         fileId
+    //     )
+    // }
+
     getFilePreview(fileId) {
-        return this.storage.getFilePreview(
-            conf.appwriteBucketId,
-            fileId
-        )
+        return this.storage.getFilePreview({
+            bucketId: conf.appwriteBucketId,
+            fileId: fileId
+        })
     }
 
 }
 
 
-const service = new service()
+const service = new AppwriteService()
 
 export default service
