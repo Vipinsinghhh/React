@@ -19,6 +19,19 @@ function Protected({children, authentication = true}) {
         
         //let authValue = authStatus === true ? true : false
 
+    //---------------------------------------------------------------------------------
+
+    //     const needsLogin = authentication && !authStatus
+    //     const shouldRedirectHome = !authentication && authStatus
+
+    //     if(needsLogin){
+    //         navigate("/login")
+    //     } else if(shouldRedirectHome){
+    //         navigate("/")
+    //     }
+    //     setLoader(false)
+    // }, [authStatus, navigate, authentication])
+
         if(authentication && authStatus !== authentication){
             navigate("/login")
         } else if(!authentication && authStatus !== authentication){
