@@ -1,16 +1,214 @@
-# React + Vite
+# Blog App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack-style blogging application with a React frontend and Appwrite backend services. Users can create an account, sign in, publish posts with rich text and featured images, browse posts, and manage the posts they authored.
 
-Currently, two official plugins are available:
+The project is built as a single-page application. React Router handles navigation, Redux Toolkit stores authentication state, and Appwrite provides authentication, database, and file storage without a separate custom backend.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- User registration and email/password login
+- Persistent session check when the application starts
+- Protected routes for authenticated users
+- Create, read, update, and delete blog posts
+- Rich text post content through TinyMCE
+- Featured image upload and display through Appwrite Storage
+- Automatic slug generation from a post title
+- Active and inactive post status
+- Author-only edit and delete controls in the post view
+- Responsive UI built with Tailwind CSS
+- Form handling and validation with React Hook Form
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+- React 19
+- Vite
+- React Router DOM
+- Redux Toolkit and React Redux
+- Appwrite Web SDK
+- Tailwind CSS with the Vite plugin
+- TinyMCE React integration
+- React Hook Form
+- `html-react-parser` for rendering saved rich text content
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Application Flow
+
+1. `App.jsx` checks Appwrite for an existing user session when the app loads.
+2. The result is stored in the Redux `auth` slice.
+3. `AuthLayout` redirects unauthenticated users away from protected pages and redirects authenticated users away from login/signup pages.
+4. `PostForm` uploads a featured image first, then creates or updates the related Appwrite database document.
+5. Posts are read from Appwrite and displayed through reusable `PostCard` components.
+6. On a post detail page, only the author sees the edit and delete actions.
+
+## Routes
+
+| Route | Access | Purpose |
+| --- | --- | --- |
+| `/` | Public | Shows active posts on the home page |
+| `/login` | Guest only | Signs an existing user in |
+| `/signup` | Guest only | Creates an Appwrite account |
+| `/all-posts` | Authenticated | Lists all posts, including inactive posts |
+| `/add-post` | Authenticated | Opens the new post form |
+| `/edit-post/:slug` | Authenticated | Edits an existing post |
+| `/post/:slug` | Public | Displays a single post |
+
+## Project Structure
+
+```text
+src/
+├── appwrite/
+│   ├── auth.js              # Appwrite account and session operations
+│   └── config.js            # Appwrite database and storage operations
+├── assets/                  # Images and static frontend assets
+├── components/
+│   ├── Header/              # Navigation and logout controls
+│   ├── Footer/              # Site footer
+│   ├── post-form/           # Create/update post form
+│   ├── AuthLayout.jsx       # Route authentication guard
+│   ├── PostCard.jsx         # Post preview card
+│   ├── RTE.jsx              # Rich text editor
+│   └── index.js             # Shared component exports
+├── conf/conf.js             # Vite environment variable mapping
+├── pages/                   # Route-level page components
+├── store/
+│   ├── authSlice.js         # Authentication state
+│   └── store.js             # Redux store configuration
+├── App.jsx                  # App shell and session initialization
+└── main.jsx                 # Router and Redux provider setup
+```
+
+## Requirements
+
+- Node.js 18 or newer
+- npm
+- An Appwrite project, either Appwrite Cloud or a self-hosted instance
+
+## Local Setup
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Create the Appwrite resources
+
+Create an Appwrite project and note its project ID. Then create:
+
+1. An Appwrite database.
+2. A collection for blog posts.
+3. A storage bucket for featured images.
+4. Email/password authentication support in the project.
+
+The client uses the following post document attributes:
+
+| Attribute | Suggested type | Required | Description |
+| --- | --- | --- | --- |
+| `title` | String | Yes | Post title |
+| `content` | String or long text | Yes | HTML generated by the rich text editor |
+| `featuredImage` | String | No | Appwrite Storage file ID |
+| `status` | String | Yes | `active` or `inactive` |
+| `userId` | String | Yes | Appwrite user ID of the author |
+
+The application uses the post slug as the Appwrite document ID. Configure the collection to accept that ID and keep slugs unique.
+
+The storage service uploads files with public read permission so image URLs can be rendered in the browser. Configure database and collection permissions to match the deployment security model. At minimum, the authenticated client must be able to perform the operations used by the application.
+
+### 3. Configure environment variables
+
+Create a `.env` file in the project root:
+
+```env
+VITE_APPWRITE_URL=https://cloud.appwrite.io/v1
+VITE_APPWRITE_PROJECT_ID=your_project_id
+VITE_APPWRITE_DATABASE_ID=your_database_id
+VITE_APPWRITE_COLLECTION_ID=your_collection_id
+VITE_APPWRITE_BUCKET_ID=your_bucket_id
+```
+
+For a self-hosted Appwrite installation, replace `VITE_APPWRITE_URL` with the installation's API endpoint. Vite exposes only variables prefixed with `VITE_` to browser code, so do not put server secrets in this file.
+
+### 4. Start the development server
+
+```bash
+npm run dev
+```
+
+Open the local URL printed by Vite, usually `http://localhost:5173`.
+
+## Available Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Starts the Vite development server with HMR |
+| `npm run build` | Creates a production build in `dist/` |
+| `npm run preview` | Serves the production build locally |
+| `npm run lint` | Runs ESLint across the project |
+
+## Post Management Details
+
+### Creating a post
+
+An authenticated user enters a title, slug, rich text body, status, and featured image. The title automatically generates a lowercase hyphen-separated slug, although the slug can also be edited manually. The image is uploaded to the Appwrite bucket before the post document is created.
+
+### Editing a post
+
+The existing post is loaded by its document ID. If a replacement image is provided, the new file is uploaded and the previous file is deleted. The post document is then updated with the new title, content, image, and status.
+
+### Deleting a post
+
+The post document is deleted first. When that succeeds, the associated featured image is removed from Appwrite Storage and the user is returned to the home page.
+
+### Public and authenticated post lists
+
+The home page requests posts with `status = active`. The authenticated All Posts page requests all documents, which makes it possible for signed-in users to see inactive drafts or unpublished posts.
+
+## Troubleshooting
+
+### Images upload but do not display
+
+- Confirm that `VITE_APPWRITE_BUCKET_ID` points to the correct bucket.
+- Confirm that the bucket allows the browser to read uploaded files. New uploads from this project use `Permission.read(Role.any())`.
+- Check that the post stores the Appwrite file ID, not a local file name or URL.
+- Existing files created before public read permission was added may need their permissions updated or may need to be uploaded again.
+
+### Authentication fails
+
+- Check the Appwrite endpoint and project ID in `.env`.
+- Confirm that the email/password authentication method is enabled.
+- Restart the Vite server after changing environment variables.
+- Inspect the browser console and Appwrite project logs for the exact error message.
+
+### Posts are not created or loaded
+
+- Verify the database, collection, and bucket IDs.
+- Check that the collection attributes match the names and types documented above.
+- Confirm that the collection permissions allow the requested client operation.
+- Ensure the generated slug is unique because it is used as the document ID.
+
+## Security Notes
+
+- The frontend contains Appwrite resource IDs because it calls Appwrite directly from the browser. These IDs are not substitutes for server-side secrets.
+- Never expose an Appwrite API key or other privileged credential in a `VITE_` variable.
+- Client-side route guards improve the user experience but are not a complete authorization boundary. Enforce ownership and create/update/delete permissions in Appwrite as well.
+- Public file read access is intentional for featured images. Do not use the same bucket for private files without changing the permission strategy.
+
+## Interview Summary
+
+This project demonstrates a React SPA architecture with a managed backend:
+
+- **Component design:** reusable inputs, buttons, layout components, post cards, and a shared create/edit form.
+- **State management:** Redux Toolkit stores the authenticated user and exposes auth state to navigation and protected routes.
+- **Routing:** React Router uses nested routes and route-level authentication wrappers.
+- **Backend integration:** Appwrite services are isolated in `src/appwrite/`, separating account, database, and storage concerns from UI components.
+- **CRUD workflow:** post documents and featured image files are coordinated during create, update, and delete operations.
+- **Forms:** React Hook Form handles controlled submission and validation, while the rich text editor supplies HTML content.
+- **Deployment awareness:** Vite environment variables keep project-specific Appwrite configuration outside the source code.
+
+## Possible Next Improvements
+
+- Add automated tests for authentication, post CRUD, slug generation, and image cleanup.
+- Move ownership enforcement fully into Appwrite permissions and validate the author on edit/delete operations.
+- Add pagination, loading states, empty states, and user-friendly error boundaries.
+- Add confirmation before deleting a post.
+- Add image size/type validation and cleanup handling if a database write fails after an image upload.
+- Add a dedicated draft workflow and separate published posts from inactive drafts in the UI.
